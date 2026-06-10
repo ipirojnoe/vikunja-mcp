@@ -9,6 +9,7 @@ import { getClientFromContext } from '../../../client';
 import { isAuthenticationError } from '../../../utils/auth-error-handler';
 import { withRetry, RETRY_CONFIG } from '../../../utils/retry';
 import { AUTH_ERROR_MESSAGES } from '../constants';
+import { getTaskWithRelationships } from '../relationship-verification';
 
 /**
  * Service for managing task assignee operations
@@ -19,11 +20,14 @@ export const AssigneeOperationsService = {
    */
   async assignUsersToTask(taskId: number, assigneeIds: number[]): Promise<void> {
     const client = await getClientFromContext();
+    const currentTask = await client.tasks.getTask(taskId);
+    const currentAssigneeIds = currentTask.assignees?.map((assignee) => assignee.id) ?? [];
+    const finalAssigneeIds = [...new Set([...currentAssigneeIds, ...assigneeIds])];
 
     try {
       await withRetry(
         () => client.tasks.bulkAssignUsersToTask(taskId, {
-          user_ids: assigneeIds,
+          user_ids: finalAssigneeIds,
         }),
         {
           ...RETRY_CONFIG.AUTH_ERRORS,
@@ -38,7 +42,26 @@ export const AssigneeOperationsService = {
           `${AUTH_ERROR_MESSAGES.ASSIGNEE_ASSIGN} (Retried ${RETRY_CONFIG.AUTH_ERRORS.maxRetries} times)`
         );
       }
+      const message = assigneeError instanceof Error ? assigneeError.message : String(assigneeError);
+      if (/task does not exist|task not found/i.test(message)) {
+        throw new MCPError(
+          ErrorCode.API_ERROR,
+          `Task ${taskId} is readable but assignees could not be changed. Check that the Vikunja API token allows task assignee routes. Original error: ${message}`,
+        );
+      }
       throw assigneeError;
+    }
+
+    const updatedTask = await getTaskWithRelationships(client, taskId, {
+      assignees: finalAssigneeIds,
+    });
+    const actualIds = new Set(updatedTask.assignees?.map((assignee) => assignee.id) ?? []);
+    const missingIds = finalAssigneeIds.filter((id) => !actualIds.has(id));
+    if (missingIds.length > 0) {
+      throw new MCPError(
+        ErrorCode.API_ERROR,
+        `Task ${taskId} is missing requested assignees: ${missingIds.join(', ')}`,
+      );
     }
   },
 

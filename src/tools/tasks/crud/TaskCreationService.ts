@@ -8,13 +8,14 @@ import { getClientFromContext } from '../../../client';
 import type { Task, VikunjaClient } from 'node-vikunja';
 import { logger } from '../../../utils/logger';
 import { isAuthenticationError } from '../../../utils/auth-error-handler';
-import { withRetry, RETRY_CONFIG } from '../../../utils/retry';
+import { RETRY_CONFIG } from '../../../utils/retry';
 import { transformApiError, handleFetchError } from '../../../utils/error-handler';
 import { sanitizeString } from '../../../utils/validation';
 import { AUTH_ERROR_MESSAGES } from '../constants';
 import { validateDateString, validateId, convertRepeatConfiguration } from '../validation';
 import { createTaskResponse } from './TaskResponseFormatter';
 import { formatAorpAsMarkdown } from '../../../utils/response-factory';
+import { getTaskWithRelationships } from '../relationship-verification';
 
 export interface CreateTaskArgs {
   projectId?: number;
@@ -120,7 +121,12 @@ export async function createTask(args: CreateTaskArgs): Promise<{ content: Array
       }
 
       // Fetch and verify the complete relationship state before reporting success.
-      completeTask = createdTask.id ? await client.tasks.getTask(createdTask.id) : createdTask;
+      completeTask = createdTask.id
+        ? await getTaskWithRelationships(client, createdTask.id, {
+            ...(args.labels !== undefined && { labels: args.labels }),
+            ...(args.assignees !== undefined && { assignees: args.assignees }),
+          })
+        : createdTask;
       verifyRequestedRelationships(completeTask, args);
     } catch (updateError) {
       // Attempt to clean up the partially created task
@@ -134,6 +140,7 @@ export async function createTask(args: CreateTaskArgs): Promise<{ content: Array
       { task: completeTask },
       {
         timestamp: new Date().toISOString(),
+        ...(completeTask.id !== undefined && { taskId: completeTask.id }),
         projectId: args.projectId,
         labelsAdded: args.labels ? args.labels.length > 0 : false,
         assigneesAdded: args.assignees ? args.assignees.length > 0 : false,
@@ -211,14 +218,10 @@ function verifyIds(
  */
 async function addLabelsToTask(client: VikunjaClient, taskId: number, labelIds: number[]): Promise<void> {
   try {
-    await withRetry(
+    await retryPostCreateRelationship(
       () => client.tasks.updateTaskLabels(taskId, {
         label_ids: labelIds,
       }),
-      {
-        ...RETRY_CONFIG.AUTH_ERRORS,
-        shouldRetry: (error) => isAuthenticationError(error)
-      }
     );
   } catch (labelError) {
     // Check if it's an auth error after retries
@@ -237,14 +240,10 @@ async function addLabelsToTask(client: VikunjaClient, taskId: number, labelIds: 
  */
 async function addAssigneesToTask(client: VikunjaClient, taskId: number, assigneeIds: number[]): Promise<void> {
   try {
-    await withRetry(
+    await retryPostCreateRelationship(
       () => client.tasks.bulkAssignUsersToTask(taskId, {
         user_ids: assigneeIds,
       }),
-      {
-        ...RETRY_CONFIG.AUTH_ERRORS,
-        shouldRetry: (error) => isAuthenticationError(error)
-      }
     );
   } catch (assigneeError) {
     // Check if it's an auth error after retries
@@ -256,6 +255,37 @@ async function addAssigneesToTask(client: VikunjaClient, taskId: number, assigne
     }
     throw assigneeError;
   }
+}
+
+const POST_CREATE_RETRY_DELAYS_MS = [100, 250, 500];
+
+async function retryPostCreateRelationship<T>(operation: () => Promise<T>): Promise<T> {
+  for (const delayMs of POST_CREATE_RETRY_DELAYS_MS) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isPostCreateRetryable(error)) {
+        throw error;
+      }
+
+      await delay(delayMs);
+    }
+  }
+
+  return operation();
+}
+
+function isPostCreateRetryable(error: unknown): boolean {
+  if (isAuthenticationError(error)) {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return /task does not exist|task not found/i.test(message);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
