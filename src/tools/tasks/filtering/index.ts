@@ -38,4 +38,4 @@ export type {
   FilterExpression,
   FilterValidationResult,
   SavedFilter
-} from '../../../types/filters';
+} from '../../../filters';

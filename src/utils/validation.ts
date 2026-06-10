@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import type { FilterExpression, FilterField, FilterOperator, LogicalOperator } from '../types/filters';
+import type { FilterExpression, FilterField, FilterOperator, LogicalOperator } from '../filters';
 import { MCPError, ErrorCode } from '../types/errors';
 
 /**

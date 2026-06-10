@@ -4,7 +4,7 @@
  */
 
 import type { Task, GetTasksParams } from 'node-vikunja';
-import type { FilterExpression } from '../../../types/filters';
+import type { FilterExpression } from '../../../filters';
 import type { TaskListingArgs, TaskFilterExecutionResult } from '../types/filters';
 import type { TaskFilterStorage, FilteringParams, FilteringMetadata, FilteringArgs } from '../types/filters';
 import { FilteringContext } from '../../../utils/filtering';
