@@ -119,6 +119,55 @@ describe('Tasks CRUD - Final Coverage', () => {
   });
 
   describe('updateTask field tracking (lines 279, 281)', () => {
+    it('should move a task to another project and verify the result', async () => {
+      const currentTask = {
+        id: 1,
+        project_id: 10,
+        title: 'Task to move',
+        description: 'Keep this',
+        priority: 3,
+        done: false,
+      };
+      const movedTask = {
+        ...currentTask,
+        project_id: 20,
+      };
+      mockClient.tasks.getTask
+        .mockResolvedValueOnce(currentTask)
+        .mockResolvedValueOnce(movedTask);
+      mockClient.tasks.updateTask.mockResolvedValue(movedTask);
+
+      const result = await updateTask({
+        id: 1,
+        projectId: 20,
+      });
+
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
+        project_id: 20,
+        title: 'Task to move',
+        description: 'Keep this',
+        priority: 3,
+        done: false,
+      });
+      expect(result.content[0].text).toContain('projectId');
+    });
+
+    it('should reject a move when Vikunja leaves the task in the old project', async () => {
+      const currentTask = {
+        id: 1,
+        project_id: 10,
+        title: 'Task to move',
+        done: false,
+      };
+      mockClient.tasks.getTask.mockResolvedValue(currentTask);
+      mockClient.tasks.updateTask.mockResolvedValue(currentTask);
+
+      await expect(updateTask({
+        id: 1,
+        projectId: 20,
+      })).rejects.toThrow('Task 1 was not moved to project 20');
+    });
+
     it('should track due date and priority changes correctly', async () => {
       const mockTask = {
         id: 1,

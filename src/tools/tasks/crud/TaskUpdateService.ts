@@ -6,7 +6,12 @@
 import { MCPError, ErrorCode } from '../../../types';
 import { getClientFromContext } from '../../../client';
 import type { Task, VikunjaClient } from 'node-vikunja';
-import { validateDateString, validateId, convertRepeatConfiguration } from '../validation';
+import {
+  validateDateString,
+  validateId,
+  convertRepeatConfiguration,
+  buildWritableTaskSnapshot,
+} from '../validation';
 import { isAuthenticationError } from '../../../utils/auth-error-handler';
 import { RETRY_CONFIG } from '../../../utils/retry';
 import { transformApiError, handleFetchError, handleStatusCodeError } from '../../../utils/error-handler';
@@ -16,6 +21,7 @@ import { formatAorpAsMarkdown } from '../../../utils/response-factory';
 
 export interface UpdateTaskArgs {
   id?: number;
+  projectId?: number;
   title?: string;
   description?: string;
   dueDate?: string;
@@ -47,6 +53,9 @@ export async function updateTask(args: UpdateTaskArgs): Promise<{ content: Array
       throw new MCPError(ErrorCode.VALIDATION_ERROR, 'Task id is required for update operation');
     }
     validateId(args.id, 'id');
+    if (args.projectId !== undefined) {
+      validateId(args.projectId, 'projectId');
+    }
 
     // Validate date if provided
     if (args.dueDate) {
@@ -74,6 +83,12 @@ export async function updateTask(args: UpdateTaskArgs): Promise<{ content: Array
 
     // Fetch the complete updated task
     const completeTask = await client.tasks.getTask(args.id);
+    if (args.projectId !== undefined && completeTask.project_id !== args.projectId) {
+      throw new MCPError(
+        ErrorCode.API_ERROR,
+        `Task ${args.id} was not moved to project ${args.projectId}`,
+      );
+    }
 
     const response = createTaskResponse(
       'update-task',
@@ -137,6 +152,7 @@ async function analyzeUpdateState(client: VikunjaClient, taskId: number, args: U
   if (currentTask.done !== undefined) previousState.done = currentTask.done;
   if (currentTask.repeat_after !== undefined) previousState.repeat_after = currentTask.repeat_after;
   if (currentTask.repeat_mode !== undefined) previousState.repeat_mode = currentTask.repeat_mode;
+  if (currentTask.project_id !== undefined) previousState.project_id = currentTask.project_id;
 
   // Track which fields are being updated
   const affectedFields: string[] = [];
@@ -146,6 +162,7 @@ async function analyzeUpdateState(client: VikunjaClient, taskId: number, args: U
   if (args.dueDate !== undefined && args.dueDate !== currentTask.due_date) affectedFields.push('dueDate');
   if (args.priority !== undefined && args.priority !== currentTask.priority) affectedFields.push('priority');
   if (args.done !== undefined && args.done !== currentTask.done) affectedFields.push('done');
+  if (args.projectId !== undefined && args.projectId !== currentTask.project_id) affectedFields.push('projectId');
   if (args.repeatAfter !== undefined && args.repeatAfter !== currentTask.repeat_after) affectedFields.push('repeatAfter');
   if (args.repeatMode !== undefined && args.repeatMode !== currentTask.repeat_mode) affectedFields.push('repeatMode');
   if (args.labels !== undefined) affectedFields.push('labels');
@@ -164,8 +181,9 @@ async function analyzeUpdateState(client: VikunjaClient, taskId: number, args: U
  */
 function buildUpdateData(currentTask: Task, args: UpdateTaskArgs): Task {
   const updateData: Task = {
-    ...currentTask,
+    ...buildWritableTaskSnapshot(currentTask),
     // Override with any provided updates
+    ...(args.projectId !== undefined && { project_id: args.projectId }),
     ...(args.title !== undefined && { title: args.title }),
     ...(args.description !== undefined && { description: args.description }),
     ...(args.dueDate !== undefined && { due_date: args.dueDate }),

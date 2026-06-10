@@ -691,10 +691,13 @@ describe('Tasks Tool', () => {
         title: 'Updated Title',
       });
 
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...mockTask,
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
         title: 'Updated Title',
-      });
+        description: 'Test Description',
+        priority: 5,
+        done: false,
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
@@ -724,14 +727,14 @@ describe('Tasks Tool', () => {
         done: true,
       });
 
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...mockTask,
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
         title: 'Updated Title',
         description: 'Updated Description',
         due_date: '2025-01-01T00:00:00Z',
         priority: 3,
         done: true,
-      });
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
@@ -812,11 +815,14 @@ describe('Tasks Tool', () => {
         done: true,
       });
 
-      // Should send the complete task object, not just the done field
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...taskWithDetails,
+      // Should send the complete writable task state, not just the done field.
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
+        title: 'Test Task',
+        description: 'Important description',
+        priority: 4,
         done: true,
-      });
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
