@@ -103,7 +103,7 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
 // Core types that are commonly imported by external code
 export { MCPError, ErrorCode } from './types/errors';
 export type { TaskResponseData, FilterExpression, Task } from './types';
-export type { ParseResult } from './types/filters';
+export type { ParseResult } from './filters';
 export type { AorpBuilderConfig, AorpFactoryResult } from './types';
 
 // Core utilities that are widely used across the codebase
@@ -111,7 +111,7 @@ export { logger } from './utils/logger';
 export { isAuthenticationError } from './utils/auth-error-handler';
 export { withRetry, RETRY_CONFIG } from './utils/retry';
 export { transformApiError, handleFetchError, handleStatusCodeError } from './utils/error-handler';
-export { parseFilterString } from './utils/filters';
+export { parseFilterString } from './filters';
 export { validateTaskCountLimit } from './utils/memory';
 export { createStandardResponse, createAorpErrorResponse as createErrorResponse } from './utils/response-factory';
 

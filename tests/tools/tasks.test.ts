@@ -380,7 +380,12 @@ describe('Tasks Tool', () => {
       };
 
       mockClient.tasks.createTask.mockResolvedValue({ ...mockTask, id: 1 });
-      mockClient.tasks.getTask.mockResolvedValue({ ...mockTask, ...fullTask });
+      mockClient.tasks.getTask.mockResolvedValue({
+        ...mockTask,
+        title: 'Full Task',
+        labels: [{ id: 1 }, { id: 2 }],
+        assignees: [{ id: 1 }, { id: 2 }],
+      });
       mockClient.tasks.updateTaskLabels.mockResolvedValue(undefined);
       mockClient.tasks.bulkAssignUsersToTask.mockResolvedValue(undefined);
 
@@ -393,6 +398,44 @@ describe('Tasks Tool', () => {
           project_id: 1,
         }),
       );
+    });
+
+    it('should reject and roll back when requested labels are not applied', async () => {
+      mockClient.tasks.createTask.mockResolvedValue({ ...mockTask, id: 1 });
+      mockClient.tasks.updateTaskLabels.mockResolvedValue(undefined);
+      mockClient.tasks.getTask.mockResolvedValue({
+        ...mockTask,
+        id: 1,
+        labels: [],
+      });
+      mockClient.tasks.deleteTask.mockResolvedValue(undefined);
+
+      await expect(callTool('create', {
+        title: 'Task with labels',
+        projectId: 1,
+        labels: [4, 5],
+      })).rejects.toThrow('requested labels were not applied');
+
+      expect(mockClient.tasks.deleteTask).toHaveBeenCalledWith(1);
+    });
+
+    it('should reject and roll back when requested assignees are not applied', async () => {
+      mockClient.tasks.createTask.mockResolvedValue({ ...mockTask, id: 1 });
+      mockClient.tasks.bulkAssignUsersToTask.mockResolvedValue(undefined);
+      mockClient.tasks.getTask.mockResolvedValue({
+        ...mockTask,
+        id: 1,
+        assignees: [],
+      });
+      mockClient.tasks.deleteTask.mockResolvedValue(undefined);
+
+      await expect(callTool('create', {
+        title: 'Assigned task',
+        projectId: 1,
+        assignees: [7],
+      })).rejects.toThrow('requested assignees were not applied');
+
+      expect(mockClient.tasks.deleteTask).toHaveBeenCalledWith(1);
     });
 
     it('should validate required fields', async () => {
@@ -691,10 +734,13 @@ describe('Tasks Tool', () => {
         title: 'Updated Title',
       });
 
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...mockTask,
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
         title: 'Updated Title',
-      });
+        description: 'Test Description',
+        priority: 5,
+        done: false,
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
@@ -724,14 +770,14 @@ describe('Tasks Tool', () => {
         done: true,
       });
 
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...mockTask,
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
         title: 'Updated Title',
         description: 'Updated Description',
         due_date: '2025-01-01T00:00:00Z',
         priority: 3,
         done: true,
-      });
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
@@ -812,11 +858,14 @@ describe('Tasks Tool', () => {
         done: true,
       });
 
-      // Should send the complete task object, not just the done field
-      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, {
-        ...taskWithDetails,
+      // Should send the complete writable task state, not just the done field.
+      expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({
+        project_id: 1,
+        title: 'Test Task',
+        description: 'Important description',
+        priority: 4,
         done: true,
-      });
+      }));
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);

@@ -8,7 +8,7 @@ import type {
   FilterExpression,
   SavedFilter,
   FilterValidationConfig
-} from '../../../types/filters';
+} from '../../../filters';
 import type { GetTasksParams } from 'node-vikunja';
 import type { AorpBuilderConfig } from '../../../types';
 import type { SimpleFilterStorage } from '../../../storage';

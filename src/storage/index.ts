@@ -9,7 +9,7 @@
 
 import { logger } from '../utils/logger';
 import { SimpleFilterStorage, storageManager } from './SimpleFilterStorage';
-import type { FilterStorage, SavedFilter } from '../types/filters';
+import type { FilterStorage, SavedFilter } from '../filters';
 import { StorageDataError } from '../utils/storage-errors';
 
 // Export the main storage implementation
@@ -154,4 +154,3 @@ export function migrateMemoryToPersistent(): {
     errors: [],
   };
 }
-

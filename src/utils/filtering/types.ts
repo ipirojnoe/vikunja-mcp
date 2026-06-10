@@ -3,7 +3,7 @@
  */
 
 import type { Task, GetTasksParams } from 'node-vikunja';
-import type { FilterExpression } from '../../types/filters';
+import type { FilterExpression } from '../../filters';
 
 /**
  * Arguments for filtering operations

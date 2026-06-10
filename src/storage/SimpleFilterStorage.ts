@@ -9,7 +9,7 @@
 
 import { logger } from '../utils/logger';
 import { Mutex } from 'async-mutex';
-import type { FilterStorage, SavedFilter } from '../types/filters';
+import type { FilterStorage, SavedFilter } from '../filters';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

@@ -3,8 +3,14 @@ import { z } from 'zod';
 import type { AuthManager } from '../auth/AuthManager';
 import type { VikunjaClientFactory } from '../client/VikunjaClientFactory';
 import { storageManager } from '../storage';
-import { FilterBuilder, validateFilterExpression, parseFilterString } from '../utils/filters';
-import type { FilterField, FilterOperator, SavedFilter } from '../types/filters';
+import {
+  FilterBuilder,
+  validateFilterExpression,
+  parseFilterString,
+  type FilterField,
+  type FilterOperator,
+  type SavedFilter,
+} from '../filters';
 import { logger } from '../utils/logger';
 import { createStandardResponse } from '../types';
 import { ErrorCode, MCPError, type FilterValue } from '../types';

@@ -5,7 +5,7 @@
  * with proper type safety for the storage layer.
  */
 
-import type { FilterExpression } from '../../types/filters';
+import type { FilterExpression } from '../../filters';
 
 export class FilterSerializer {
   /**
