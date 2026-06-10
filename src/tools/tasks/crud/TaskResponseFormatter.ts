@@ -10,6 +10,15 @@ import type { Task } from '../../../types/vikunja';
 import type { ResponseData } from '../../../utils/simple-response';
 import { applyResponseVerbosity, resolveResponseConfig } from '../../../transforms/response-verbosity';
 
+const SINGLE_TASK_REQUIRED_FIELDS = [
+  'id',
+  'title',
+  'done',
+  'project_id',
+  'labels',
+  'assignees',
+];
+
 /**
  * AORP configuration generator for different operations
  * Creates optimized AORP configurations based on operation type
@@ -90,7 +99,21 @@ export function createTaskResponse(
   _aorpConfig?: AorpBuilderConfig,
   _sessionId?: string
 ): AorpFactoryResult {
-  const responseConfig = resolveResponseConfig(_verbosity);
+  const resolvedConfig = resolveResponseConfig(_verbosity);
+  const responseConfig = isSingleTaskOperation(operation)
+    ? {
+        ...resolvedConfig,
+        includeFields: [
+          ...new Set([
+            ...resolvedConfig.includeFields,
+            ...SINGLE_TASK_REQUIRED_FIELDS,
+          ]),
+        ],
+        excludeFields: resolvedConfig.excludeFields.filter(
+          (field) => !SINGLE_TASK_REQUIRED_FIELDS.includes(field),
+        ),
+      }
+    : resolvedConfig;
   const selectedVerbosity = responseConfig.verbosity;
   const data = applyResponseVerbosity(_data, responseConfig);
   generateAorpConfig(operation, data, selectedVerbosity);
@@ -99,7 +122,11 @@ export function createTaskResponse(
   const taskData = data.task || data.tasks;
   if (taskData) {
     // Convert Task | Task[] to proper ResponseData format
-    const formattedTaskData = Array.isArray(taskData) ? { tasks: taskData as ResponseData[] } : taskData as ResponseData;
+    const formattedTaskData = {
+      tasks: Array.isArray(taskData)
+        ? taskData as ResponseData[]
+        : [taskData as ResponseData],
+    };
     const taskResult = createTaskAorpResponse(operation, message, formattedTaskData, _metadata);
 
     // Add transformation property for compatibility
@@ -197,6 +224,12 @@ export function createTaskResponse(
       }
     }
   };
+}
+
+function isSingleTaskOperation(operation: string): boolean {
+  return operation === 'create-task' ||
+    operation === 'get-task' ||
+    operation === 'update-task';
 }
 
 /**

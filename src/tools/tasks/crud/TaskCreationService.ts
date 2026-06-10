@@ -140,6 +140,7 @@ export async function createTask(args: CreateTaskArgs): Promise<{ content: Array
       { task: completeTask },
       {
         timestamp: new Date().toISOString(),
+        ...(completeTask.id !== undefined && { taskId: completeTask.id }),
         projectId: args.projectId,
         labelsAdded: args.labels ? args.labels.length > 0 : false,
         assigneesAdded: args.assignees ? args.assignees.length > 0 : false,

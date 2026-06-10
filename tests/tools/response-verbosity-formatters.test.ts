@@ -18,6 +18,9 @@ describe('tool response verbosity', () => {
         id: 1,
         title: 'Task',
         done: false,
+        project_id: 4,
+        labels: [{ id: 2, title: 'Red' }],
+        assignees: [{ id: 3, username: 'demin' }],
         description: 'Hidden',
         priority: 3,
       },
@@ -27,8 +30,36 @@ describe('tool response verbosity', () => {
       id: 1,
       title: 'Task',
       done: false,
+      project_id: 4,
+      labels: [{ id: 2, title: 'Red' }],
+      assignees: [{ id: 3, username: 'demin' }],
     });
     expect(result.transformation.context.verbosity).toBe('minimal');
+  });
+
+  it('keeps operational task fields even when globally excluded', () => {
+    process.env.VIKUNJA_RESPONSE_EXCLUDE_FIELDS = 'done,project_id,labels,assignees';
+    ConfigurationManager.reset();
+
+    const result = createTaskResponse('get-task', 'Task found', {
+      task: {
+        id: 1,
+        title: 'Task',
+        done: false,
+        project_id: 4,
+        labels: [{ id: 2, title: 'Red' }],
+        assignees: [{ id: 3, username: 'demin' }],
+      },
+    });
+
+    expect(result.transformation.originalResponse.data).toEqual({
+      id: 1,
+      title: 'Task',
+      done: false,
+      project_id: 4,
+      labels: [{ id: 2, title: 'Red' }],
+      assignees: [{ id: 3, username: 'demin' }],
+    });
   });
 
   it('lets project request verbosity override the global setting', () => {

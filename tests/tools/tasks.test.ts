@@ -355,8 +355,10 @@ describe('Tasks Tool', () => {
 
       const markdown = result.content[0].text;
       const parsed = parseMarkdown(markdown);
-            const aorpStatus = parsed.getAorpStatus();
-      expect(aorpStatus.type).toBe('success');    });
+      const aorpStatus = parsed.getAorpStatus();
+      expect(aorpStatus.type).toBe('success');
+      expect(markdown).toContain('**taskId:** 1');
+    });
 
     it('should create a task with all optional fields', async () => {
       const fullTask = {
@@ -706,6 +708,8 @@ describe('Tasks Tool', () => {
       const aorpStatus = parsed.getAorpStatus();
       expect(aorpStatus.type).toBe('success');
       expect(markdown).toContain('get-task');
+      expect(markdown).toContain('**Status:** ❌ Not Done');
+      expect(markdown).toContain('**Assignees:** user1 (user1@test.com)');
     });
     it('should get a task by ID', async () => {
       mockClient.tasks.getTask.mockResolvedValue(mockTask);
