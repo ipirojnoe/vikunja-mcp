@@ -442,6 +442,10 @@ describe('Projects Tool', () => {
 
       expect(mockClient.projects.updateProject).toHaveBeenCalledWith(1, {
         title: 'Updated Title',
+        description: 'Test Description',
+        parent_project_id: 0,
+        is_archived: false,
+        hex_color: '#4287f5',
       });
       expect(result.content[0].type).toBe('text');
       const markdown = result.content[0].text;
@@ -469,7 +473,16 @@ describe('Projects Tool', () => {
     });
 
     it('should support updating all fields', async () => {
-      mockClient.projects.updateProject.mockResolvedValue(mockProject);
+      const updatedProject = {
+        ...mockProject,
+        title: 'New Title',
+        description: 'New Description',
+        parent_project_id: 2,
+        is_archived: true,
+        hex_color: '#ff0000',
+      };
+      mockClient.projects.getProject.mockResolvedValue(mockProject);
+      mockClient.projects.updateProject.mockResolvedValue(updatedProject);
       mockClient.projects.getProjects.mockResolvedValue([
         mockProject,
         { id: 2, title: 'Parent', parent_project_id: undefined },
@@ -493,9 +506,78 @@ describe('Projects Tool', () => {
       });
     });
 
+    it('should preserve title and parent for a partial update', async () => {
+      const childProject = {
+        ...mockProject,
+        title: 'Child Project',
+        parent_project_id: 42,
+      };
+      const updatedProject = {
+        ...childProject,
+        description: 'Updated description',
+      };
+      mockClient.projects.getProject.mockResolvedValue(childProject);
+      mockClient.projects.getProjects.mockResolvedValue([
+        childProject,
+        { ...mockProject, id: 42, title: 'Parent Project' },
+      ]);
+      mockClient.projects.updateProject.mockResolvedValue(updatedProject);
+
+      await callTool('update', {
+        id: 1,
+        description: 'Updated description',
+      });
+
+      expect(mockClient.projects.updateProject).toHaveBeenCalledWith(1, {
+        title: 'Child Project',
+        description: 'Updated description',
+        parent_project_id: 42,
+        is_archived: false,
+        hex_color: '#4287f5',
+      });
+    });
+
+    it('should detach a project only when parentProjectId is null', async () => {
+      const childProject = {
+        ...mockProject,
+        parent_project_id: 42,
+      };
+      const updatedProject = {
+        ...childProject,
+        parent_project_id: 0,
+      };
+      mockClient.projects.getProject.mockResolvedValue(childProject);
+      mockClient.projects.getProjects.mockResolvedValue([childProject]);
+      mockClient.projects.updateProject.mockResolvedValue(updatedProject);
+
+      await callTool('update', {
+        id: 1,
+        parentProjectId: null,
+      });
+
+      expect(mockClient.projects.updateProject).toHaveBeenCalledWith(1, {
+        title: 'Test Project',
+        description: 'Test Description',
+        parent_project_id: 0,
+        is_archived: false,
+        hex_color: '#4287f5',
+      });
+    });
+
+    it('should reject an update when the returned state does not match', async () => {
+      mockClient.projects.getProject.mockResolvedValue(mockProject);
+      mockClient.projects.updateProject.mockResolvedValue(mockProject);
+
+      await expect(callTool('update', {
+        id: 1,
+        title: 'Updated Title',
+      })).rejects.toThrow('Project 1 update could not be verified');
+    });
+
     it('should handle 404 errors', async () => {
       const error: any = new Error('Not found');
       error.statusCode = 404;
+      mockClient.projects.getProject.mockResolvedValue(mockProject);
       mockClient.projects.updateProject.mockRejectedValue(error);
 
       await expect(callTool('update', { id: 999, title: 'New Title' })).rejects.toThrow(
@@ -504,6 +586,7 @@ describe('Projects Tool', () => {
     });
 
     it('should handle API errors', async () => {
+      mockClient.projects.getProject.mockResolvedValue(mockProject);
       mockClient.projects.updateProject.mockRejectedValue(new Error('API Error'));
 
       await expect(callTool('update', { id: 1, title: 'New Title' })).rejects.toThrow(
@@ -512,6 +595,7 @@ describe('Projects Tool', () => {
     });
 
     it('should handle non-Error API errors in update', async () => {
+      mockClient.projects.getProject.mockResolvedValue(mockProject);
       mockClient.projects.updateProject.mockRejectedValue(null);
 
       await expect(callTool('update', { id: 1, title: 'New Title' })).rejects.toThrow(
@@ -522,7 +606,10 @@ describe('Projects Tool', () => {
     describe('hex color validation', () => {
       it('should accept valid hex colors in update and normalize to lowercase', async () => {
         mockClient.projects.getProject.mockResolvedValue(mockProject);
-        mockClient.projects.updateProject.mockResolvedValue(mockProject);
+        mockClient.projects.updateProject.mockImplementation(async (_id, project) => ({
+          ...mockProject,
+          ...project,
+        }));
 
         const validColors = [
           { input: '#4287f5', expected: '#4287f5' },
@@ -536,6 +623,10 @@ describe('Projects Tool', () => {
         for (const { input, expected } of validColors) {
           await callTool('update', { id: 1, hexColor: input });
           expect(mockClient.projects.updateProject).toHaveBeenCalledWith(1, {
+            title: 'Test Project',
+            description: 'Test Description',
+            parent_project_id: 0,
+            is_archived: false,
             hex_color: expected,
           });
         }

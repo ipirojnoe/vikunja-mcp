@@ -114,7 +114,7 @@ export interface CreateProjectRequest {
 export interface UpdateProjectRequest {
   title?: string;
   description?: string;
-  parent_project_id?: number;
+  parent_project_id?: number | null;
   identifier?: string;
   color?: string;
   hex_color?: string;

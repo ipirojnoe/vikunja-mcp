@@ -70,7 +70,7 @@ export interface UpdateProjectArgs {
   id: number;
   title?: string;
   description?: string;
-  parentProjectId?: number;
+  parentProjectId?: number | null;
   isArchived?: boolean;
   hexColor?: string;
   verbosity?: string;
@@ -392,7 +392,13 @@ export async function updateProject(
       validationUpdateData.hexColor = hexColor;
     }
 
-    const resolvedParentProjectId = parentProjectId ?? (currentProject && typeof currentProject.parent_project_id === 'number' ? currentProject.parent_project_id : undefined);
+    const resolvedParentProjectId = parentProjectId === null
+      ? undefined
+      : parentProjectId ?? (
+        currentProject && typeof currentProject.parent_project_id === 'number'
+          ? currentProject.parent_project_id
+          : undefined
+      );
     if (resolvedParentProjectId !== undefined) {
       validationUpdateData.parentProjectId = resolvedParentProjectId;
     }
@@ -400,7 +406,7 @@ export async function updateProject(
     validateProjectData(validationUpdateData, allProjects);
 
     // Check depth constraints if parentProjectId is being updated
-    if (parentProjectId !== undefined && allProjects.length > 0) {
+    if (parentProjectId !== undefined && parentProjectId !== null && allProjects.length > 0) {
       const depth = calculateProjectDepth(parentProjectId, allProjects);
       if (depth >= 10) { // MAX_PROJECT_DEPTH
         throw new MCPError(
@@ -410,26 +416,40 @@ export async function updateProject(
       }
     }
 
-    // Prepare update data
-    const updateData: UpdateProjectRequest = {};
-
-    if (title !== undefined) {
-      updateData.title = title.trim();
-    }
-    if (description !== undefined) {
-      updateData.description = description.trim();
-    }
-    if (parentProjectId !== undefined) {
-      updateData.parent_project_id = parentProjectId;
-    }
-    if (isArchived !== undefined) {
-      updateData.is_archived = isArchived;
-    }
-    if (hexColor !== undefined) {
-      updateData.hex_color = hexColor.toLowerCase();
-    }
+    // Vikunja's POST update behaves like a model replacement for some fields.
+    // Send a complete writable snapshot so omitted MCP arguments remain unchanged.
+    const updateData: UpdateProjectRequest = {
+      title: title !== undefined ? title.trim() : currentProject.title,
+      description: description !== undefined
+        ? description.trim()
+        : (currentProject.description ?? ''),
+      parent_project_id: parentProjectId !== undefined
+        ? (parentProjectId ?? 0)
+        : (currentProject.parent_project_id ?? 0),
+      is_archived: isArchived !== undefined
+        ? isArchived
+        : (currentProject.is_archived ?? false),
+      hex_color: hexColor !== undefined
+        ? hexColor.toLowerCase()
+        : (currentProject.hex_color ?? ''),
+    };
 
     const updatedProject = await client.projects.updateProject(id, updateData as Project);
+
+    const expectedParentId = updateData.parent_project_id ?? 0;
+    const actualParentId = updatedProject.parent_project_id ?? 0;
+    if (
+      updatedProject.title !== updateData.title ||
+      updatedProject.description !== updateData.description ||
+      actualParentId !== expectedParentId ||
+      updatedProject.is_archived !== updateData.is_archived ||
+      (updatedProject.hex_color ?? '') !== updateData.hex_color
+    ) {
+      throw new MCPError(
+        ErrorCode.API_ERROR,
+        `Project ${id} update could not be verified; Vikunja returned a different project state`,
+      );
+    }
 
     const result = createProjectResponse(
       'update_project',
