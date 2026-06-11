@@ -26,6 +26,7 @@ describe('Bulk operations', () => {
       bulkAssignUsersToTask: jest.fn(),
       removeUserFromTask: jest.fn(),
       updateTaskLabels: jest.fn(),
+      moveTaskToBucket: jest.fn(),
     },
   };
 
@@ -119,7 +120,16 @@ describe('Bulk operations', () => {
           taskIds: [1, 2],
           field: 'bucket_id',
           value: -1,
+          viewId: 52,
         })).rejects.toThrow('bucket_id must be a positive integer');
+      });
+
+      it('should require viewId for bucket_id', async () => {
+        await expect(bulkUpdateTasks({
+          taskIds: [1],
+          field: 'bucket_id',
+          value: 39,
+        })).rejects.toThrow('viewId is required for bucket_id bulk updates');
       });
 
       it('should validate assignees array', async () => {
@@ -196,11 +206,24 @@ describe('Bulk operations', () => {
           { id: 1, project_id: 13, bucket_id: 38, title: 'Task 1' },
         ]);
 
-        await bulkUpdateTasks({ taskIds: [1], field: 'bucket_id', value: '39' });
+        mockClient.tasks.moveTaskToBucket.mockResolvedValue({
+          bucket_id: 39,
+          task_id: 1,
+          project_view_id: 52,
+        });
 
-        expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(
+        await bulkUpdateTasks({
+          taskIds: [1],
+          field: 'bucket_id',
+          value: '39',
+          viewId: 52,
+        });
+
+        expect(mockClient.tasks.moveTaskToBucket).toHaveBeenCalledWith(
+          13,
+          52,
+          39,
           1,
-          expect.objectContaining({ bucket_id: 39 }),
         );
       });
     });
@@ -263,20 +286,29 @@ describe('Bulk operations', () => {
             title: 'Task 2',
           },
         ]);
+        mockClient.tasks.moveTaskToBucket.mockResolvedValue({
+          bucket_id: 39,
+          project_view_id: 52,
+        });
 
         const result = await bulkUpdateTasks({
           taskIds: [1, 2],
           field: 'bucket_id',
           value: 39,
+          viewId: 52,
         });
 
-        expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(
+        expect(mockClient.tasks.moveTaskToBucket).toHaveBeenCalledWith(
+          13,
+          52,
+          39,
           1,
-          expect.objectContaining({ bucket_id: 39 }),
         );
-        expect(mockClient.tasks.updateTask).toHaveBeenCalledWith(
+        expect(mockClient.tasks.moveTaskToBucket).toHaveBeenCalledWith(
+          13,
+          52,
+          39,
           2,
-          expect.objectContaining({ bucket_id: 39 }),
         );
         expect(result.content[0].text).toContain('Successfully updated 2 tasks');
       });

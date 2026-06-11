@@ -10,6 +10,8 @@ export interface BulkUpdateArgs {
   taskIds?: number[];
   field?: string;
   value?: unknown;
+  viewId?: number;
+  view_id?: number;
 }
 
 export interface BulkDeleteArgs {
@@ -63,6 +65,16 @@ export const bulkOperationValidator = {
     }
 
     args.taskIds.forEach((id) => validateId(id, 'task ID'));
+    const viewId = resolveViewId(args);
+    if (viewId !== undefined) {
+      validateId(viewId, 'viewId');
+    }
+    if (args.field === 'bucket_id' && viewId === undefined) {
+      throw new MCPError(
+        ErrorCode.VALIDATION_ERROR,
+        'viewId is required for bucket_id bulk updates',
+      );
+    }
   },
 
   /**
@@ -229,3 +241,17 @@ export const bulkOperationValidator = {
     });
   }
 };
+
+export function resolveViewId(args: BulkUpdateArgs): number | undefined {
+  if (
+    args.viewId !== undefined &&
+    args.view_id !== undefined &&
+    args.viewId !== args.view_id
+  ) {
+    throw new MCPError(
+      ErrorCode.VALIDATION_ERROR,
+      'viewId and view_id must match when both are provided',
+    );
+  }
+  return args.viewId ?? args.view_id;
+}
