@@ -97,10 +97,17 @@ export function moveTaskToBucket(
     throw new Error('The Vikunja task service does not support bucket moves');
   }
 
-  return (service as TaskServiceWithBucketMove).moveTaskToBucket(
-    projectId,
-    viewId,
-    bucketId,
-    taskId,
-  );
+  return (service as TaskServiceWithBucketMove)
+    .moveTaskToBucket(projectId, viewId, bucketId, taskId)
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/missing, malformed, expired|invalid token/i.test(message)) {
+        throw new Error(
+          'Vikunja rejected the API token for the Kanban bucket route. ' +
+          'Create a new token with the projects.views_buckets_tasks permission. ' +
+          `Original error: ${message}`,
+        );
+      }
+      throw error;
+    });
 }

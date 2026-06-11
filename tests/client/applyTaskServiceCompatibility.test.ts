@@ -1,5 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { applyTaskServiceCompatibility } from '../../src/client/applyTaskServiceCompatibility';
+import {
+  applyTaskServiceCompatibility,
+  moveTaskToBucket,
+} from '../../src/client/applyTaskServiceCompatibility';
 import type { TaskService } from 'node-vikunja';
 
 describe('applyTaskServiceCompatibility', () => {
@@ -69,5 +72,17 @@ describe('applyTaskServiceCompatibility', () => {
     applyTaskServiceCompatibility(service);
 
     expect(service.getAllTasks).toBe(getAllTasks);
+  });
+
+  it('explains the API token permission required for bucket moves', async () => {
+    const service = {
+      moveTaskToBucket: jest.fn().mockRejectedValue(
+        new Error('missing, malformed, expired or otherwise invalid token provided'),
+      ),
+    } as unknown as TaskService;
+
+    await expect(moveTaskToBucket(service, 13, 52, 39, 35)).rejects.toThrow(
+      'projects.views_buckets_tasks permission',
+    );
   });
 });
