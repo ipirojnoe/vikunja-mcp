@@ -38,6 +38,7 @@ export class FieldSelector {
     const contextFields: FieldDefinition[] = [
       { fieldName: 'description', category: FieldCategory.CONTEXT, minVerbosity: Verbosity.STANDARD },
       { fieldName: 'project_id', category: FieldCategory.CONTEXT, minVerbosity: Verbosity.STANDARD },
+      { fieldName: 'bucket_id', category: FieldCategory.CONTEXT, minVerbosity: Verbosity.STANDARD },
       { fieldName: 'priority', category: FieldCategory.CONTEXT, minVerbosity: Verbosity.STANDARD },
     ];
 
@@ -110,7 +111,7 @@ export class FieldSelector {
       return FieldCategory.SCHEDULING;
     }
 
-    if (['description', 'project', 'priority'].includes(lowerFieldName)) {
+    if (['description', 'project', 'priority', 'bucket'].includes(lowerFieldName)) {
       return FieldCategory.CONTEXT;
     }
 

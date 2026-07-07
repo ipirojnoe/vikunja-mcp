@@ -219,6 +219,10 @@ function formatTaskItem(task: Task, index: number): string {
     parts.push(`- **Project:** ${task.project_id}`);
   }
 
+  if (task.bucket_id !== undefined) {
+    parts.push(`- **Bucket:** ${task.bucket_id}`);
+  }
+
   // Labels (if any)
   if (task.labels && task.labels.length > 0) {
     const labelTitles = task.labels.map(l => l.title).join(', ');

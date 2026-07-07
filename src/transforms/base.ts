@@ -220,7 +220,7 @@ export const FIELD_CATEGORIES = {
   // Context fields (included in standard and above)
   CONTEXT_FIELDS: [
     'description', 'project_id', 'project', 'labels', 'assignees',
-    'creator', 'created_by', 'priority', 'identifier'
+    'creator', 'created_by', 'priority', 'identifier', 'bucket_id'
   ],
 
   // Scheduling fields (included in detailed and above)
@@ -231,7 +231,7 @@ export const FIELD_CATEGORIES = {
 
   // Metadata fields (included in complete only)
   METADATA_FIELDS: [
-    'hex_color', 'index', 'kanban_position', 'position', 'bucket_id',
+    'hex_color', 'index', 'kanban_position', 'position',
     'parent_task_id', 'related_tasks', 'attachments', 'comments',
     'background_information', 'subscription', 'is_favorite'
   ]

@@ -26,6 +26,7 @@ describe('Task Transformer', () => {
       updated_at: '2024-01-05T14:30:00Z',
       completed_at: null,
       project_id: 5,
+      bucket_id: 9,
       hex_color: '#ff0000',
       position: 1,
       identifier: 'TEST-001',
@@ -92,7 +93,8 @@ describe('Task Transformer', () => {
           done: false,
           description: 'This is a test task',
           priority: 3,
-          project_id: 5
+          project_id: 5,
+          bucket_id: 9
         });
         expect(result.metrics.fieldsIncluded).toBeGreaterThan(3);
         expect(result.metadata.categoriesIncluded).toContain(FieldCategory.CONTEXT);
@@ -133,7 +135,8 @@ describe('Task Transformer', () => {
           due_date: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
           created_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
           updated_at: expect.stringMatching(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/),
-          project_id: 5
+          project_id: 5,
+          bucket_id: 9
         });
 
         expect(result.metadata.categoriesIncluded).toContain(FieldCategory.SCHEDULING);
