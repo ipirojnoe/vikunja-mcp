@@ -15,6 +15,7 @@ const SINGLE_TASK_REQUIRED_FIELDS = [
   'title',
   'done',
   'project_id',
+  'bucket_id',
   'labels',
   'assignees',
 ];

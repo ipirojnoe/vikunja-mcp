@@ -12,6 +12,7 @@ describe('simple-response - Task Formatting', () => {
       const task: Task = {
         id: 1,
         project_id: 5,
+        bucket_id: 9,
         title: 'Fix critical bug',
         description: 'Users cannot login',
         done: false,
@@ -45,6 +46,8 @@ describe('simple-response - Task Formatting', () => {
       expect(result).toContain('**Progress:**');
       expect(result).toContain('25%');
       expect(result).toContain('**Project:**');
+      expect(result).toContain('**Bucket:**');
+      expect(result).toContain('9');
       expect(result).toContain('**Labels:**');
       expect(result).toContain('urgent');
       expect(result).toContain('**Assignees:**');

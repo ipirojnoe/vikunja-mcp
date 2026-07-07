@@ -23,6 +23,7 @@ export interface Task {
   updated_at: string;
   completed_at?: string;
   project_id?: number;
+  bucket_id?: number;
   hex_color?: string;
   position?: number;
   identifier?: string;
@@ -62,6 +63,7 @@ export interface OptimizedTask {
   created_at?: string;
   updated_at?: string;
   project_id?: number;
+  bucket_id?: number;
   hex_color?: string;
   position?: number;
   identifier?: string;
@@ -231,6 +233,7 @@ export class TaskTransformer {
         return value;
 
       case 'project_id':
+      case 'bucket_id':
         return value;
 
       case 'hex_color':

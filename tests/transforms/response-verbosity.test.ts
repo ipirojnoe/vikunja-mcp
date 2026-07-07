@@ -46,6 +46,7 @@ describe('response verbosity configuration', () => {
       done: false,
       description: 'Details',
       priority: 3,
+      bucket_id: 9,
       due_date: '2026-06-10',
       hex_color: '#ffffff',
     };
@@ -59,6 +60,28 @@ describe('response verbosity configuration', () => {
       title: 'Task',
       done: false,
       priority: 3,
+    });
+  });
+
+  it('includes task bucket ids at standard verbosity', () => {
+    const task = {
+      id: 1,
+      title: 'Task',
+      done: false,
+      project_id: 4,
+      bucket_id: 9,
+    };
+
+    expect(applyResponseVerbosity(task, {
+      verbosity: Verbosity.STANDARD,
+      includeFields: [],
+      excludeFields: [],
+    })).toEqual({
+      id: 1,
+      title: 'Task',
+      done: false,
+      project_id: 4,
+      bucket_id: 9,
     });
   });
 

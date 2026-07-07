@@ -19,6 +19,7 @@ describe('tool response verbosity', () => {
         title: 'Task',
         done: false,
         project_id: 4,
+        bucket_id: 9,
         labels: [{ id: 2, title: 'Red' }],
         assignees: [{ id: 3, username: 'demin' }],
         description: 'Hidden',
@@ -31,6 +32,7 @@ describe('tool response verbosity', () => {
       title: 'Task',
       done: false,
       project_id: 4,
+      bucket_id: 9,
       labels: [{ id: 2, title: 'Red' }],
       assignees: [{ id: 3, username: 'demin' }],
     });
@@ -38,7 +40,7 @@ describe('tool response verbosity', () => {
   });
 
   it('keeps operational task fields even when globally excluded', () => {
-    process.env.VIKUNJA_RESPONSE_EXCLUDE_FIELDS = 'done,project_id,labels,assignees';
+    process.env.VIKUNJA_RESPONSE_EXCLUDE_FIELDS = 'done,project_id,bucket_id,labels,assignees';
     ConfigurationManager.reset();
 
     const result = createTaskResponse('get-task', 'Task found', {
@@ -47,6 +49,7 @@ describe('tool response verbosity', () => {
         title: 'Task',
         done: false,
         project_id: 4,
+        bucket_id: 9,
         labels: [{ id: 2, title: 'Red' }],
         assignees: [{ id: 3, username: 'demin' }],
       },
@@ -57,6 +60,7 @@ describe('tool response verbosity', () => {
       title: 'Task',
       done: false,
       project_id: 4,
+      bucket_id: 9,
       labels: [{ id: 2, title: 'Red' }],
       assignees: [{ id: 3, username: 'demin' }],
     });

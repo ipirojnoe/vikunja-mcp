@@ -116,6 +116,7 @@ export interface ProjectView {
 export interface Task {
   id?: number;
   project_id: number;
+  bucket_id?: number;
   title: string;
   description?: string;
   done?: boolean;
