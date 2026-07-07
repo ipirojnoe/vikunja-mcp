@@ -77,7 +77,7 @@ describe('applyTaskServiceCompatibility', () => {
     );
     expect(request).toHaveBeenNthCalledWith(
       4,
-      '/projects/13/views/52/buckets',
+      '/projects/13/views/52/tasks',
       'GET',
       undefined,
       { params: { page: 1, per_page: 500 } },

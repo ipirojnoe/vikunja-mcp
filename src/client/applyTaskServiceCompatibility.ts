@@ -98,7 +98,7 @@ export function applyTaskServiceCompatibility(service: unknown): void {
     projectId: number,
     viewId: number,
   ): Promise<TaskBucket[]> => service.request<TaskBucket[]>(
-    `/projects/${projectId}/views/${viewId}/buckets`,
+    `/projects/${projectId}/views/${viewId}/tasks`,
     'GET',
     undefined,
     { params: { page: 1, per_page: 500 } },
